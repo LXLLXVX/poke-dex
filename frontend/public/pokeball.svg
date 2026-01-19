@@ -1,0 +1,5 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pokeball placeholder">
+  <circle cx="60" cy="60" r="58" fill="#111425" stroke="#ff5e62" stroke-width="4" />
+  <path d="M4 60h112" stroke="#ff5e62" stroke-width="8" />
+  <circle cx="60" cy="60" r="18" fill="#0d0e15" stroke="#ff5e62" stroke-width="6" />
+</svg>
