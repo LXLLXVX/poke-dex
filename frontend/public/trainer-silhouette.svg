@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="24" fill="#141414" />
+  <circle cx="100" cy="70" r="45" fill="#2f2f2f" />
+  <rect x="55" y="120" width="90" height="60" rx="30" fill="#2f2f2f" />
+  <circle cx="100" cy="70" r="20" fill="#3c3c3c" />
+  <text x="100" y="185" text-anchor="middle" font-size="14" font-family="'Press Start 2P', monospace" fill="#777">LOADING</text>
+</svg>

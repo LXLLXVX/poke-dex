@@ -24,12 +24,14 @@ function normalizeTrainerPayload(payload) {
 
 	const hometown = sanitizeString(payload.hometown);
 	const bio = sanitizeString(payload.bio);
+	const portraitUrl = sanitizeString(payload.portraitUrl);
 
 	return {
 		name,
 		hometown: hometown || null,
 		badgeCount: normalizeBadgeCount(payload.badgeCount ?? 0),
 		bio: bio || null,
+		portraitUrl: portraitUrl || null,
 	};
 }
 
@@ -58,6 +60,7 @@ async function updateTrainer(id, payload) {
 		hometown: payload.hometown ?? existing.hometown,
 		badgeCount: payload.badgeCount ?? existing.badgeCount,
 		bio: payload.bio ?? existing.bio,
+		portraitUrl: payload.portraitUrl ?? existing.portraitUrl,
 	});
 
 	return trainerModel.update(trainerId, normalized);
