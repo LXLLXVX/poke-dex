@@ -6,6 +6,7 @@ const migrations = [
   { name: '003_create_pokemon_table', module: require('./migrations/003_create_pokemon_table') },
   { name: '004_add_trainer_portrait', module: require('./migrations/004_add_trainer_portrait') },
   { name: '005_add_unique_trainer_name', module: require('./migrations/005_add_unique_trainer_name') },
+  { name: '006_create_team_members_table', module: require('./migrations/006_create_team_members_table') },
 ];
 
 async function ensureMigrationsTable() {

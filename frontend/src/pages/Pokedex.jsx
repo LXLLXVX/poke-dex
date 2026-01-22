@@ -66,7 +66,7 @@ function PokemonCard({ pokemon, onSelect }) {
 					</span>
 				))}
 			</div>
-			<p className="pokemon-card__hint">Click para ver ficha completa</p>
+			<p className="pokemon-card__hint">Click to open the full dossier</p>
 		</article>
 	);
 }
@@ -349,7 +349,7 @@ function Pokedex() {
 							</option>
 						))}
 					</select>
-					<p className="filter-hint">Mantén Ctrl/Cmd para elegir varios tipos.</p>
+					<p className="filter-hint">Hold Ctrl/Cmd to select multiple types.</p>
 				</div>
 				<button
 					type="button"

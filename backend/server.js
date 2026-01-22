@@ -7,9 +7,14 @@ const trainerRoutes = require('./src/routes/trainer.routes');
 const typeRoutes = require('./src/routes/type.routes');
 const { runMigrations } = require('./src/database/runMigrations');
 const { runSeeders } = require('./src/database/runSeeders');
+const teamRoutes = require('./src/routes/team.routes');
 
 const PORT = process.env.PORT || 4000;
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const rawOrigins = process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://localhost:5174';
+const ALLOWED_ORIGINS = rawOrigins
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
 
 const app = express();
 
@@ -38,7 +43,18 @@ async function autoSetupDatabase() {
 
 app.use(
 	cors({
-		origin: CLIENT_ORIGIN,
+		origin(requestOrigin, callback) {
+			if (!requestOrigin) {
+				return callback(null, true);
+			}
+
+			if (ALLOWED_ORIGINS.includes(requestOrigin)) {
+				return callback(null, true);
+			}
+
+			console.warn(`[cors] Blocked origin: ${requestOrigin}`);
+			return callback(new Error('Not allowed by CORS'));
+		},
 	})
 );
 app.use(express.json());
@@ -51,6 +67,7 @@ app.get('/health', (req, res) => {
 app.use('/api/pokemon', pokemonRoutes);
 app.use('/api/trainers', trainerRoutes);
 app.use('/api/types', typeRoutes);
+app.use('/api/team', teamRoutes);
 
 app.use((req, res) => {
 	res.status(404).json({ message: 'Not found' });
