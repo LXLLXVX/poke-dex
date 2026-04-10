@@ -248,6 +248,102 @@ flowchart LR
 
 ```mermaid
 classDiagram
+      class PokemonController {
+            +listPokemon(req, res, next)
+            +getPokemon(req, res, next)
+            +createPokemon(req, res, next)
+            +updatePokemon(req, res, next)
+            +deletePokemon(req, res, next)
+      }
+
+      class TrainerController {
+            +listTrainers(req, res, next)
+            +createTrainer(req, res, next)
+            +updateTrainer(req, res, next)
+            +deleteTrainer(req, res, next)
+      }
+
+      class TypeController {
+            +listTypes(req, res, next)
+            +createType(req, res, next)
+            +updateType(req, res, next)
+            +deleteType(req, res, next)
+      }
+
+      class TeamController {
+            +listTeam(req, res, next)
+            +createMember(req, res, next)
+            +updateMember(req, res, next)
+            +deleteMember(req, res, next)
+      }
+
+      class PokemonService {
+            +listPokemon(filters)
+            +getPokemonByNationalDex(nationalDex)
+            +createPokemon(payload)
+            +updatePokemon(nationalDex, payload)
+            +deletePokemon(nationalDex)
+      }
+
+      class TrainerService {
+            +listTrainers()
+            +createTrainer(payload)
+            +updateTrainer(id, payload)
+            +deleteTrainer(id)
+      }
+
+      class TypeService {
+            +listTypes()
+            +createType(payload)
+            +updateType(id, payload)
+            +deleteType(id)
+      }
+
+      class TeamService {
+            +listTeam()
+            +addMember(payload)
+            +updateMember(id, payload)
+            +removeMember(id)
+      }
+
+      class PokemonModel {
+            +findAll(filters)
+            +findByNationalDex(nationalDex)
+            +create(pokemon)
+            +updateByNationalDex(nationalDex, pokemon)
+            +removeByNationalDex(nationalDex)
+      }
+
+      class TrainerModel {
+            +findAll()
+            +findById(id)
+            +create(payload)
+            +update(id, payload)
+            +remove(id)
+      }
+
+      class TypeModel {
+            +findAll()
+            +findById(id)
+            +create(payload)
+            +update(id, payload)
+            +remove(id)
+      }
+
+      class TeamMemberModel {
+            +findAll()
+            +findById(id)
+            +countAll()
+            +create(member)
+            +update(id, member)
+            +remove(id)
+      }
+
+      class MySqlPool {
+            +query(sql, params)
+            +execute(sql, params)
+      }
+
       PokemonController --> PokemonService
       TrainerController --> TrainerService
       TypeController --> TypeService
@@ -270,45 +366,45 @@ classDiagram
 ```mermaid
 erDiagram
       TYPES {
-            INT id PK
-            VARCHAR name UNIQUE
-            VARCHAR color
-            TEXT description
+            int id PK
+            string name
+            string color
+            string description
       }
 
       TRAINERS {
-            INT id PK
-            VARCHAR name UNIQUE
-            VARCHAR hometown
-            TINYINT badge_count
-            TEXT bio
-            VARCHAR portrait_url
+            int id PK
+            string name
+            string hometown
+            int badge_count
+            string bio
+            string portrait_url
       }
 
       POKEMON {
-            INT id PK
-            INT national_dex UNIQUE
-            VARCHAR name
-            SMALLINT height
-            SMALLINT weight
-            SMALLINT base_experience
-            VARCHAR sprite_url
-            JSON types_json
-            JSON abilities_json
-            JSON stats_json
-            INT trainer_id FK
+            int id PK
+            int national_dex
+            string name
+            int height
+            int weight
+            int base_experience
+            string sprite_url
+            string types_json
+            string abilities_json
+            string stats_json
+            int trainer_id FK
       }
 
       TEAM_MEMBERS {
-            INT id PK
-            INT national_dex FK
-            VARCHAR nickname
-            VARCHAR role
-            VARCHAR notes
+            int id PK
+            int national_dex FK
+            string nickname
+            string role
+            string notes
       }
 
-      TRAINERS ||--o{ POKEMON : trainer_id
-      POKEMON ||--o{ TEAM_MEMBERS : national_dex
+      TRAINERS ||--o{ POKEMON : has
+      POKEMON ||--o{ TEAM_MEMBERS : contains
 ```
 
 ## Estructura del proyecto
