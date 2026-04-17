@@ -5,6 +5,7 @@ const cors = require('cors');
 const pokemonRoutes = require('./src/routes/pokemon.routes');
 const trainerRoutes = require('./src/routes/trainer.routes');
 const typeRoutes = require('./src/routes/type.routes');
+const authRoutes = require('./src/routes/auth.routes');
 const { runMigrations } = require('./src/database/runMigrations');
 const { runSeeders } = require('./src/database/runSeeders');
 const teamRoutes = require('./src/routes/team.routes');
@@ -64,6 +65,7 @@ app.get('/health', (req, res) => {
 	res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/pokemon', pokemonRoutes);
 app.use('/api/trainers', trainerRoutes);
 app.use('/api/types', typeRoutes);

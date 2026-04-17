@@ -196,6 +196,62 @@ Example POST/PUT Team member body:
 - Error: { "message": "..." }
 - Successful DELETE: HTTP 204 with no body
 
+## Security Update Implemented
+
+This repository now includes a simple authentication and authorization layer for two CRUD modules: Trainers and Types.
+
+### What was implemented
+
+- Dual authentication support:
+      - Basic authentication using Base64 credentials in the Authorization header.
+      - Bearer authentication using JWT tokens issued by a login endpoint.
+- Encrypted passwords in database using bcrypt hashes (no plain text passwords stored).
+- Role-based authorization:
+      - admin: full CRUD access.
+      - trainer: read-only access to protected CRUD endpoints.
+- Protected endpoints:
+      - /api/trainers
+      - /api/types
+
+### Where the changes were made
+
+- Auth route and controller:
+      - backend/src/routes/auth.routes.js
+      - backend/src/controllers/authController.js
+- Auth service and middleware:
+      - backend/src/services/authService.js
+      - backend/src/middlewares/authMiddleware.js
+- User model and data persistence:
+      - backend/src/models/user.js
+      - backend/src/database/migrations/007_create_users_table.js
+      - backend/src/database/seeders/004_users_seeder.js
+      - backend/src/database/runMigrations.js
+      - backend/src/database/runSeeders.js
+- Backend bootstrapping and route wiring:
+      - backend/server.js
+- Protected CRUD routes:
+      - backend/src/routes/trainer.routes.js
+      - backend/src/routes/type.routes.js
+- Environment and dependency updates:
+      - backend/.env.example
+      - backend/package.json
+      - backend/package-lock.json
+
+### How it was implemented
+
+1. Added a users table with username, password_hash, and role.
+2. Seeded demo users with bcrypt-hashed passwords.
+3. Implemented login endpoint to validate credentials and issue JWT.
+4. Built a middleware that accepts both Basic and Bearer schemes.
+5. Applied role checks at route level for Trainers and Types CRUD endpoints.
+6. Documented usage and endpoint behavior in backend README.
+
+### Verification performed
+
+- Basic auth access to protected GET endpoints works.
+- Bearer token access works after login.
+- Role restrictions are enforced (trainer receives HTTP 403 on protected write operations).
+
 ## Tests
 
 Automated CRUD tests exist for Types in backend/tests/types.crud.test.js.

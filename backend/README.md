@@ -16,25 +16,46 @@ API built with Express + MySQL that exposes CRUD operations for Pokémon, traine
 ## Database tasks
 
 - `npm run migrate` applies the schema (`npm run migrate:down` rolls it back).
-- `npm run seed` fills the tables (types, trainers, Pokémon).
+- `npm run seed` fills the tables (types, trainers, Pokémon, users for auth).
 
 You can still run these scripts manually even if the automation flags are disabled.
+
+## Authentication
+
+The API supports two authentication schemes for protected endpoints:
+
+- `Authorization: Basic <base64(username:password)>`
+- `Authorization: Bearer <jwt_token>`
+
+### Login endpoint
+
+- `POST /api/auth/login` with body `{ "username": "admin", "password": "admin123" }`
+- Response returns `{ data: { token, tokenType, user } }`
+
+### Seeded demo users
+
+- `admin / admin123` with role `admin`
+- `misty / misty123` with role `trainer`
+
+Passwords are stored hashed in MySQL (`users.password_hash`) using bcrypt.
 
 ## REST endpoints
 
 All responses follow `{ data: ... }` for successful payloads.
 
 ### Types `/api/types`
-- `GET /` — list types.
-- `POST /` — create. Body: `{ "name": "fire", "color": "#EE8130", "description": "Specializes in offense" }`.
-- `PUT /:id` — update the type identified by numeric `id`.
-- `DELETE /:id` — remove a type.
+- Protected with Basic or Bearer auth.
+- `GET /` — roles `admin` or `trainer`.
+- `POST /` — role `admin` only. Body: `{ "name": "fire", "color": "#EE8130", "description": "Specializes in offense" }`.
+- `PUT /:id` — role `admin` only.
+- `DELETE /:id` — role `admin` only.
 
 ### Trainers `/api/trainers`
-- `GET /` — list trainers.
-- `POST /` — create. Body: `{ "name": "Misty", "hometown": "Cerulean City", "badgeCount": 4, "bio": "Water specialist" }`.
-- `PUT /:id` — update by numeric `id`.
-- `DELETE /:id` — remove by numeric `id` (also releases their Pokémon via the FK `ON DELETE SET NULL`).
+- Protected with Basic or Bearer auth.
+- `GET /` — roles `admin` or `trainer`.
+- `POST /` — role `admin` only. Body: `{ "name": "Misty", "hometown": "Cerulean City", "badgeCount": 4, "bio": "Water specialist" }`.
+- `PUT /:id` — role `admin` only.
+- `DELETE /:id` — role `admin` only (also releases their Pokémon via the FK `ON DELETE SET NULL`).
 
 ### Pokémon `/api/pokemon`
 - `GET /` — list with optional query params: `search`, `type`, `types[]`, `limit`, `offset`.

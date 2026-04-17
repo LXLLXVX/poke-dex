@@ -4,6 +4,7 @@ const seeders = [
   { name: '001_types_seeder', module: require('./seeders/001_types_seeder') },
   { name: '002_trainers_seeder', module: require('./seeders/002_trainers_seeder') },
   { name: '003_pokemon_seeder', module: require('./seeders/003_pokemon_seeder') },
+  { name: '004_users_seeder', module: require('./seeders/004_users_seeder') },
 ];
 
 async function runSeeders() {
