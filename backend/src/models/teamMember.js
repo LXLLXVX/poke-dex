@@ -1,4 +1,4 @@
-const pool = require('../database/pool');
+const { Pokemon, TeamMember } = require('../database/ormModels');
 
 function safeParse(json, fallback = []) {
 	if (json === null || json === undefined) {
@@ -28,116 +28,90 @@ function safeParse(json, fallback = []) {
 
 function mapRow(row) {
 	if (!row) return null;
+	const pokemon = row.pokemon;
+	const pokemonTypes = pokemon ? safeParse(pokemon.typesJson, []) : [];
 	return {
 		id: row.id,
-		nationalDex: row.national_dex,
+		nationalDex: row.nationalDex,
 		nickname: row.nickname,
 		role: row.role,
 		notes: row.notes,
-		createdAt: row.created_at,
-		updatedAt: row.updated_at,
-		pokemon: row.pokemon_name
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt,
+		pokemon: pokemon
 			? {
-				name: row.pokemon_name,
-				spriteUrl: row.pokemon_sprite_url,
-				types: safeParse(row.pokemon_types_json, []),
+				name: pokemon.name,
+				spriteUrl: pokemon.spriteUrl,
+				types: pokemonTypes,
 			}
 			: null,
 	};
 }
 
 async function findAll() {
-	const [rows] = await pool.query(
-		`
-			SELECT
-				tm.id,
-				tm.national_dex,
-				tm.nickname,
-				tm.role,
-				tm.notes,
-				tm.created_at,
-				tm.updated_at,
-				p.name AS pokemon_name,
-				p.sprite_url AS pokemon_sprite_url,
-				p.types_json AS pokemon_types_json
-			FROM team_members tm
-			LEFT JOIN pokemon p ON p.national_dex = tm.national_dex
-			ORDER BY tm.created_at ASC
-		`
-	);
-	return rows.map(mapRow);
+	const rows = await TeamMember.findAll({
+		include: [{ model: Pokemon, as: 'pokemon', attributes: ['name', 'spriteUrl', 'typesJson'] }],
+		order: [['createdAt', 'ASC']],
+	});
+
+	return rows.map((entry) => mapRow(entry.get({ plain: true })));
 }
 
 async function countAll() {
-	const [rows] = await pool.query('SELECT COUNT(*) as total FROM team_members');
-	return rows[0]?.total ?? 0;
+	return TeamMember.count();
 }
 
 async function findById(id) {
-	const [rows] = await pool.query(
-		`
-			SELECT
-				tm.id,
-				tm.national_dex,
-				tm.nickname,
-				tm.role,
-				tm.notes,
-				tm.created_at,
-				tm.updated_at,
-				p.name AS pokemon_name,
-				p.sprite_url AS pokemon_sprite_url,
-				p.types_json AS pokemon_types_json
-			FROM team_members tm
-			LEFT JOIN pokemon p ON p.national_dex = tm.national_dex
-			WHERE tm.id = ?
-			LIMIT 1
-		`,
-		[id]
-	);
-	return mapRow(rows[0]);
+	const row = await TeamMember.findByPk(id, {
+		include: [{ model: Pokemon, as: 'pokemon', attributes: ['name', 'spriteUrl', 'typesJson'] }],
+	});
+
+	return mapRow(row?.get({ plain: true }));
+}
+
+async function findByNationalDex(nationalDex) {
+	const row = await TeamMember.findOne({
+		where: { nationalDex },
+		include: [{ model: Pokemon, as: 'pokemon', attributes: ['name', 'spriteUrl', 'typesJson'] }],
+	});
+
+	return mapRow(row?.get({ plain: true }));
 }
 
 async function create(member) {
-	const [result] = await pool.execute(
-		`
-			INSERT INTO team_members (
-				national_dex,
-				nickname,
-				role,
-				notes,
-				created_at,
-				updated_at
-			) VALUES (?, ?, ?, ?, NOW(), NOW())
-		`,
-		[member.nationalDex, member.nickname ?? null, member.role ?? null, member.notes ?? null]
-	);
-	return findById(result.insertId);
+	const row = await TeamMember.create({
+		nationalDex: member.nationalDex,
+		nickname: member.nickname ?? null,
+		role: member.role ?? null,
+		notes: member.notes ?? null,
+	});
+
+	return findById(row.id);
 }
 
 async function update(id, member) {
-	await pool.execute(
-		`
-			UPDATE team_members SET
-				national_dex = ?,
-				nickname = ?,
-				role = ?,
-				notes = ?,
-				updated_at = NOW()
-			WHERE id = ?
-		`,
-		[member.nationalDex, member.nickname ?? null, member.role ?? null, member.notes ?? null, id]
-	);
+	const row = await TeamMember.findByPk(id);
+	if (!row) return null;
+
+	await row.update({
+		nationalDex: member.nationalDex,
+		nickname: member.nickname ?? null,
+		role: member.role ?? null,
+		notes: member.notes ?? null,
+	});
+
 	return findById(id);
 }
 
 async function remove(id) {
-	const [result] = await pool.execute('DELETE FROM team_members WHERE id = ?', [id]);
-	return result.affectedRows > 0;
+	const deletedCount = await TeamMember.destroy({ where: { id } });
+	return deletedCount > 0;
 }
 
 module.exports = {
 	findAll,
 	findById,
+	findByNationalDex,
 	countAll,
 	create,
 	update,

@@ -5,13 +5,22 @@ function sanitizeString(value) {
 	return typeof value === 'string' ? value.trim() : '';
 }
 
+function isValidHttpUrl(value) {
+	try {
+		const parsed = new URL(value);
+		return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+	} catch {
+		return false;
+	}
+}
+
 function normalizeBadgeCount(value) {
 	const parsed = Number(value);
-	if (Number.isNaN(parsed) || parsed < 0) {
-		return 0;
+	if (!Number.isInteger(parsed)) {
+		throw httpError(400, 'badgeCount must be an integer');
 	}
-	if (parsed > 8) {
-		return 8;
+	if (parsed < 0 || parsed > 8) {
+		throw httpError(400, 'badgeCount must be between 0 and 8');
 	}
 	return parsed;
 }
@@ -21,10 +30,30 @@ function normalizeTrainerPayload(payload) {
 	if (!name) {
 		throw httpError(400, 'Trainer name is required');
 	}
+	if (name.length < 2 || name.length > 80) {
+		throw httpError(400, 'Trainer name must have between 2 and 80 characters');
+	}
+	if (!/^[a-zA-Z0-9 .'-]+$/.test(name)) {
+		throw httpError(400, 'Trainer name contains invalid characters');
+	}
 
 	const hometown = sanitizeString(payload.hometown);
+	if (hometown.length > 120) {
+		throw httpError(400, 'hometown cannot exceed 120 characters');
+	}
+
 	const bio = sanitizeString(payload.bio);
+	if (bio.length > 2000) {
+		throw httpError(400, 'bio cannot exceed 2000 characters');
+	}
+
 	const portraitUrl = sanitizeString(payload.portraitUrl);
+	if (portraitUrl && !isValidHttpUrl(portraitUrl)) {
+		throw httpError(400, 'portraitUrl must be a valid http/https URL');
+	}
+	if (portraitUrl.length > 255) {
+		throw httpError(400, 'portraitUrl cannot exceed 255 characters');
+	}
 
 	return {
 		name,

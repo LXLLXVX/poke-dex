@@ -1,22 +1,5 @@
-const pool = require('../database/pool');
-
-const BASE_SELECT = `
-	SELECT
-		id,
-		national_dex,
-		name,
-		height,
-		weight,
-		base_experience,
-		sprite_url,
-		types_json,
-		abilities_json,
-		stats_json,
-		trainer_id,
-		created_at,
-		updated_at
-	FROM pokemon
-`;
+const { Op, fn, col, where } = require('sequelize');
+const { Pokemon } = require('../database/ormModels');
 
 function safeParse(json, fallback = []) {
 	if (json === null || json === undefined) {
@@ -48,18 +31,18 @@ function mapRow(row) {
 	if (!row) return null;
 	return {
 		id: row.id,
-		nationalDex: row.national_dex,
+		nationalDex: row.nationalDex,
 		name: row.name,
 		height: row.height,
 		weight: row.weight,
-		baseExperience: row.base_experience,
-		spriteUrl: row.sprite_url,
-		types: safeParse(row.types_json, []),
-		abilities: safeParse(row.abilities_json, []),
-		stats: safeParse(row.stats_json, []),
-		trainerId: row.trainer_id,
-		createdAt: row.created_at,
-		updatedAt: row.updated_at,
+		baseExperience: row.baseExperience,
+		spriteUrl: row.spriteUrl,
+		types: safeParse(row.typesJson, []),
+		abilities: safeParse(row.abilitiesJson, []),
+		stats: safeParse(row.statsJson, []),
+		trainerId: row.trainerId,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt,
 	};
 }
 
@@ -71,114 +54,59 @@ function buildDbPayload(pokemon) {
 		weight: pokemon.weight ?? null,
 		baseExperience: pokemon.baseExperience ?? null,
 		spriteUrl: pokemon.spriteUrl ?? null,
-		typesJson: JSON.stringify(pokemon.types ?? []),
-		abilitiesJson: JSON.stringify(pokemon.abilities ?? []),
-		statsJson: JSON.stringify(pokemon.stats ?? []),
+		typesJson: pokemon.types ?? [],
+		abilitiesJson: pokemon.abilities ?? [],
+		statsJson: pokemon.stats ?? [],
 		trainerId: pokemon.trainerId ?? null,
 	};
 }
 
 async function findAll({ search, types = [], limit = 151, offset = 0 } = {}) {
-	const clauses = [];
-	const params = [];
+	const filters = {};
 
 	if (search) {
-		clauses.push('name LIKE ?');
-		params.push(`%${search}%`);
+		filters.name = { [Op.like]: `%${search}%` };
 	}
 
 	if (types.length) {
-		const typeClauses = types.map(() => "JSON_CONTAINS(types_json, JSON_QUOTE(?), '$')");
-		clauses.push(`(${typeClauses.join(' AND ')})`);
-		params.push(...types.map((typeName) => typeName.toLowerCase()));
+		filters[Op.and] = types.map((typeName) =>
+			where(fn('JSON_CONTAINS', col('types_json'), fn('JSON_QUOTE', String(typeName).toLowerCase()), '$'), 1)
+		);
 	}
 
-	let sql = BASE_SELECT;
-	if (clauses.length) {
-		sql += ` WHERE ${clauses.join(' AND ')}`;
-	}
+	const rows = await Pokemon.findAll({
+		where: filters,
+		order: [['nationalDex', 'ASC']],
+		limit: Number(limit),
+		offset: Number(offset),
+	});
 
-	sql += ' ORDER BY national_dex ASC LIMIT ? OFFSET ?';
-	params.push(Number(limit), Number(offset));
-
-	const [rows] = await pool.query(sql, params);
-	return rows.map(mapRow);
+	return rows.map((entry) => mapRow(entry.get({ plain: true })));
 }
 
 async function findByNationalDex(nationalDex) {
-	const [rows] = await pool.query(`${BASE_SELECT} WHERE national_dex = ? LIMIT 1`, [nationalDex]);
-	return mapRow(rows[0]);
+	const row = await Pokemon.findOne({ where: { nationalDex } });
+	return mapRow(row?.get({ plain: true }));
 }
 
 async function create(pokemon) {
 	const payload = buildDbPayload(pokemon);
-	await pool.execute(
-		`INSERT INTO pokemon (
-			national_dex,
-			name,
-			height,
-			weight,
-			base_experience,
-			sprite_url,
-			types_json,
-			abilities_json,
-			stats_json,
-			trainer_id,
-			created_at,
-			updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-		[
-			payload.nationalDex,
-			payload.name,
-			payload.height,
-			payload.weight,
-			payload.baseExperience,
-			payload.spriteUrl,
-			payload.typesJson,
-			payload.abilitiesJson,
-			payload.statsJson,
-			payload.trainerId,
-		]
-	);
-	return findByNationalDex(payload.nationalDex);
+	const row = await Pokemon.create(payload);
+	return mapRow(row.get({ plain: true }));
 }
 
 async function updateByNationalDex(nationalDex, pokemon) {
 	const payload = buildDbPayload(pokemon);
-	await pool.execute(
-		`UPDATE pokemon SET
-			national_dex = ?,
-			name = ?,
-			height = ?,
-			weight = ?,
-			base_experience = ?,
-			sprite_url = ?,
-			types_json = ?,
-			abilities_json = ?,
-			stats_json = ?,
-			trainer_id = ?,
-			updated_at = NOW()
-		WHERE national_dex = ?`,
-		[
-			payload.nationalDex,
-			payload.name,
-			payload.height,
-			payload.weight,
-			payload.baseExperience,
-			payload.spriteUrl,
-			payload.typesJson,
-			payload.abilitiesJson,
-			payload.statsJson,
-			payload.trainerId,
-			nationalDex,
-		]
-	);
-	return findByNationalDex(payload.nationalDex);
+	const row = await Pokemon.findOne({ where: { nationalDex } });
+	if (!row) return null;
+
+	await row.update(payload);
+	return mapRow(row.get({ plain: true }));
 }
 
 async function removeByNationalDex(nationalDex) {
-	const [result] = await pool.execute('DELETE FROM pokemon WHERE national_dex = ?', [nationalDex]);
-	return result.affectedRows > 0;
+	const deletedCount = await Pokemon.destroy({ where: { nationalDex } });
+	return deletedCount > 0;
 }
 
 module.exports = {

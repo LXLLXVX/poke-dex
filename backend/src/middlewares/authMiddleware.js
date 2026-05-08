@@ -35,6 +35,14 @@ async function parseBasicCredentials(encodedCredentials) {
 
 async function authenticate(req, res, next) {
 	try {
+		if (req.session?.authUser) {
+			req.auth = {
+				user: req.session.authUser,
+				via: 'session',
+			};
+			return next();
+		}
+
 		const { scheme, credentials } = parseAuthorizationHeader(req);
 
 		if (scheme === 'bearer') {

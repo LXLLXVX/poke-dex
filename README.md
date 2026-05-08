@@ -14,7 +14,7 @@ Full-stack application inspired by the original Gen I Pokedex, built with a REST
 
 | Layer | Technologies |
 |------|-------------|
-| Backend | Node.js 18+, Express 5, mysql2, dotenv, cors |
+| Backend | Node.js 18+, Express 5, Sequelize ORM, mysql2, dotenv, cors |
 | Frontend | React 19, React Router 7, Vite 7 |
 | Database | MySQL 8 (Docker) |
 | Testing | Jest + Supertest (backend, partial coverage) |
@@ -278,3 +278,114 @@ docker-compose.yml    Local MySQL with Docker
 - docs/clases.md
 - docs/entidad-relacion.md
 - docs/diagrams.md
+
+## Diagramas (renderizados en README)
+
+### Casos de uso
+
+```mermaid
+flowchart LR
+      U[Usuario Web] --> C1[Consultar Pokedex]
+      U --> C2[Filtrar Pokemon]
+      U --> C3[Ver detalle Pokemon]
+      U --> C4[Gestionar Tipos CRUD]
+      U --> C5[Gestionar Entrenadores CRUD]
+      U --> C6[Gestionar Equipo CRUD]
+      U --> C7[Ver dashboard]
+
+      A[Admin] --> B1[Login por sesion]
+      B1 --> C5
+      B1 --> C7
+      A --> B2[Ejecutar migraciones]
+      A --> B3[Ejecutar seeders]
+```
+
+### Diagrama de clases (backend)
+
+```mermaid
+classDiagram
+      class PokemonController
+      class TrainerController
+      class TypeController
+      class TeamController
+      class DashboardController
+
+      class PokemonService
+      class TrainerService
+      class TypeService
+      class TeamService
+      class DashboardService
+
+      class PokemonModel
+      class TrainerModel
+      class TypeModel
+      class TeamMemberModel
+      class DashboardModel
+      class UserModel
+
+      class SequelizeORM
+
+      PokemonController --> PokemonService
+      TrainerController --> TrainerService
+      TypeController --> TypeService
+      TeamController --> TeamService
+      DashboardController --> DashboardService
+
+      PokemonService --> PokemonModel
+      TrainerService --> TrainerModel
+      TypeService --> TypeModel
+      TeamService --> TeamMemberModel
+      DashboardService --> DashboardModel
+
+      PokemonModel --> SequelizeORM
+      TrainerModel --> SequelizeORM
+      TypeModel --> SequelizeORM
+      TeamMemberModel --> SequelizeORM
+      DashboardModel --> SequelizeORM
+      UserModel --> SequelizeORM
+```
+
+### Entidad-relación
+
+```mermaid
+erDiagram
+      TRAINERS ||--o{ POKEMON : trainer_id
+      POKEMON ||--o{ TEAM_MEMBERS : national_dex
+
+      TYPES {
+            int id PK
+            string name
+            string color
+            string description
+      }
+
+      TRAINERS {
+            int id PK
+            string name
+            string hometown
+            int badge_count
+            string bio
+            string portrait_url
+      }
+
+      POKEMON {
+            int id PK
+            int national_dex UK
+            string name
+            int height
+            int weight
+            int base_experience
+            json types_json
+            json abilities_json
+            json stats_json
+            int trainer_id FK
+      }
+
+      TEAM_MEMBERS {
+            int id PK
+            int national_dex FK
+            string nickname
+            string role
+            string notes
+      }
+```

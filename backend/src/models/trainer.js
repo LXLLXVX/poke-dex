@@ -1,4 +1,4 @@
-const pool = require('../database/pool');
+const { Trainer } = require('../database/ormModels');
 
 function mapRow(row) {
 	if (!row) return null;
@@ -6,62 +6,54 @@ function mapRow(row) {
 		id: row.id,
 		name: row.name,
 		hometown: row.hometown,
-		badgeCount: row.badge_count,
+		badgeCount: row.badgeCount,
 		bio: row.bio,
-		portraitUrl: row.portrait_url,
-		createdAt: row.created_at,
-		updatedAt: row.updated_at,
+		portraitUrl: row.portraitUrl,
+		createdAt: row.createdAt,
+		updatedAt: row.updatedAt,
 	};
 }
 
 async function findAll() {
-	const [rows] = await pool.query(
-		'\
-		SELECT id, name, hometown, badge_count, bio, portrait_url, created_at, updated_at\
-		FROM trainers\
-		ORDER BY name ASC\
-		'
-	);
-	return rows.map(mapRow);
+	const rows = await Trainer.findAll({ order: [['name', 'ASC']] });
+	return rows.map((entry) => mapRow(entry.get({ plain: true })));
 }
 
 async function findById(id) {
-	const [rows] = await pool.query(
-		'\
-		SELECT id, name, hometown, badge_count, bio, portrait_url, created_at, updated_at\
-		FROM trainers WHERE id = ? LIMIT 1\
-		',
-		[id]
-	);
-	return mapRow(rows[0]);
+	const row = await Trainer.findByPk(id);
+	return mapRow(row?.get({ plain: true }));
 }
 
 async function create({ name, hometown, badgeCount, bio, portraitUrl }) {
-	const [result] = await pool.execute(
-		'\
-		INSERT INTO trainers (name, hometown, badge_count, bio, portrait_url, created_at, updated_at)\
-		VALUES (?, ?, ?, ?, ?, NOW(), NOW())\
-		',
-		[name, hometown ?? null, badgeCount ?? 0, bio ?? null, portraitUrl ?? null]
-	);
-	return findById(result.insertId);
+	const row = await Trainer.create({
+		name,
+		hometown: hometown ?? null,
+		badgeCount: badgeCount ?? 0,
+		bio: bio ?? null,
+		portraitUrl: portraitUrl ?? null,
+	});
+
+	return mapRow(row.get({ plain: true }));
 }
 
 async function update(id, { name, hometown, badgeCount, bio, portraitUrl }) {
-	await pool.execute(
-		'\
-		UPDATE trainers\
-		SET name = ?, hometown = ?, badge_count = ?, bio = ?, portrait_url = ?, updated_at = NOW()\
-		WHERE id = ?\
-		',
-		[name, hometown ?? null, badgeCount ?? 0, bio ?? null, portraitUrl ?? null, id]
-	);
-	return findById(id);
+	const row = await Trainer.findByPk(id);
+	if (!row) return null;
+
+	await row.update({
+		name,
+		hometown: hometown ?? null,
+		badgeCount: badgeCount ?? 0,
+		bio: bio ?? null,
+		portraitUrl: portraitUrl ?? null,
+	});
+
+	return mapRow(row.get({ plain: true }));
 }
 
 async function remove(id) {
-	const [result] = await pool.execute('DELETE FROM trainers WHERE id = ?', [id]);
-	return result.affectedRows > 0;
+	const deletedCount = await Trainer.destroy({ where: { id } });
+	return deletedCount > 0;
 }
 
 module.exports = {

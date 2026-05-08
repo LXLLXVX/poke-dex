@@ -22,15 +22,18 @@ You can still run these scripts manually even if the automation flags are disabl
 
 ## Authentication
 
-The API supports two authentication schemes for protected endpoints:
+The API supports three authentication schemes for protected endpoints:
 
+- Session cookie (`poke.sid`) after login
 - `Authorization: Basic <base64(username:password)>`
 - `Authorization: Bearer <jwt_token>`
 
 ### Login endpoint
 
 - `POST /api/auth/login` with body `{ "username": "admin", "password": "admin123" }`
-- Response returns `{ data: { token, tokenType, user } }`
+- Response returns `{ data: { user, session } }` and creates the session cookie.
+- `GET /api/auth/me` validates the current session.
+- `POST /api/auth/logout` destroys the active session.
 
 ### Seeded demo users
 
@@ -44,14 +47,14 @@ Passwords are stored hashed in MySQL (`users.password_hash`) using bcrypt.
 All responses follow `{ data: ... }` for successful payloads.
 
 ### Types `/api/types`
-- Protected with Basic or Bearer auth.
-- `GET /` — roles `admin` or `trainer`.
-- `POST /` — role `admin` only. Body: `{ "name": "fire", "color": "#EE8130", "description": "Specializes in offense" }`.
-- `PUT /:id` — role `admin` only.
-- `DELETE /:id` — role `admin` only.
+- Public CRUD endpoint.
+- `GET /` — list available types.
+- `POST /` — create. Body: `{ "name": "fire", "color": "#EE8130", "description": "Specializes in offense" }`.
+- `PUT /:id` — update.
+- `DELETE /:id` — delete.
 
 ### Trainers `/api/trainers`
-- Protected with Basic or Bearer auth.
+- Protected with Session cookie, Basic, or Bearer auth.
 - `GET /` — roles `admin` or `trainer`.
 - `POST /` — role `admin` only. Body: `{ "name": "Misty", "hometown": "Cerulean City", "badgeCount": 4, "bio": "Water specialist" }`.
 - `PUT /:id` — role `admin` only.
@@ -79,3 +82,7 @@ All responses follow `{ data: ... }` for successful payloads.
 - `DELETE /:nationalDex` — remove the Pokémon (freeing up its Dex number for another record).
 
 Errors bubble up as JSON `{ "message": "..." }` with meaningful HTTP codes (400 on validation, 404 when a record does not exist, 500 on unexpected failures).
+
+### Dashboard `/api/dashboard`
+- `GET /team-distribution` returns aggregation data from 3 joined tables (`trainers`, `pokemon`, `team_members`).
+- Supported query filters: `trainerId`, `minBadgeCount`, `type`.

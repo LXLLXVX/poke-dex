@@ -27,9 +27,21 @@ async function requirePokemonByDex(nationalDex) {
 	return numeric;
 }
 
-function clampNotes(value) {
-	if (!value) return null;
-	return value.slice(0, MAX_NOTES_LENGTH);
+function normalizeLimitedText(value, { field, maxLength, pattern } = {}) {
+	const cleanValue = sanitizeString(value);
+	if (!cleanValue) {
+		return null;
+	}
+
+	if (cleanValue.length > maxLength) {
+		throw httpError(400, `${field} cannot exceed ${maxLength} characters`);
+	}
+
+	if (pattern && !pattern.test(cleanValue)) {
+		throw httpError(400, `${field} contains invalid characters`);
+	}
+
+	return cleanValue;
 }
 
 async function normalizePayload(payload, existing = null) {
@@ -42,13 +54,24 @@ async function normalizePayload(payload, existing = null) {
 	result.nationalDex = await requirePokemonByDex(nationalDexInput);
 
 	const nickname = sanitizeString(payload?.nickname ?? existing?.nickname ?? '');
-	result.nickname = nickname || null;
+	result.nickname = normalizeLimitedText(nickname, {
+		field: 'nickname',
+		maxLength: 80,
+		pattern: /^[a-zA-Z0-9 .'-]+$/,
+	});
 
 	const role = sanitizeString(payload?.role ?? existing?.role ?? '');
-	result.role = role || null;
+	result.role = normalizeLimitedText(role, {
+		field: 'role',
+		maxLength: 60,
+		pattern: /^[a-zA-Z0-9 .,'-]+$/,
+	});
 
 	const notes = sanitizeString(payload?.notes ?? existing?.notes ?? '');
-	result.notes = clampNotes(notes) || null;
+	result.notes = normalizeLimitedText(notes, {
+		field: 'notes',
+		maxLength: MAX_NOTES_LENGTH,
+	});
 
 	return result;
 }
@@ -64,6 +87,10 @@ async function addMember(payload) {
 	}
 
 	const normalized = await normalizePayload(payload);
+	const existingMemberWithDex = await teamMemberModel.findByNationalDex(normalized.nationalDex);
+	if (existingMemberWithDex) {
+		throw httpError(409, 'This Pokémon is already in the team');
+	}
 	return teamMemberModel.create(normalized);
 }
 
@@ -79,6 +106,10 @@ async function updateMember(id, payload) {
 	}
 
 	const normalized = await normalizePayload(payload, existing);
+	const existingMemberWithDex = await teamMemberModel.findByNationalDex(normalized.nationalDex);
+	if (existingMemberWithDex && existingMemberWithDex.id !== numericId) {
+		throw httpError(409, 'This Pokémon is already in the team');
+	}
 	return teamMemberModel.update(numericId, normalized);
 }
 

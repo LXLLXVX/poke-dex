@@ -1,25 +1,18 @@
-const pool = require('../database/pool');
+const { User } = require('../database/ormModels');
 
 function mapRow(row) {
 	if (!row) return null;
 	return {
 		id: row.id,
 		username: row.username,
-		passwordHash: row.password_hash,
+		passwordHash: row.passwordHash,
 		role: row.role,
 	};
 }
 
 async function findByUsername(username) {
-	const [rows] = await pool.query(
-		'\
-		SELECT id, username, password_hash, role\
-		FROM users WHERE username = ? LIMIT 1\
-		',
-		[username]
-	);
-
-	return mapRow(rows[0]);
+	const row = await User.findOne({ where: { username } });
+	return mapRow(row?.get({ plain: true }));
 }
 
 module.exports = {

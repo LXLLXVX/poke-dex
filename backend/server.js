@@ -1,11 +1,13 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
 
 const pokemonRoutes = require('./src/routes/pokemon.routes');
 const trainerRoutes = require('./src/routes/trainer.routes');
 const typeRoutes = require('./src/routes/type.routes');
 const authRoutes = require('./src/routes/auth.routes');
+const dashboardRoutes = require('./src/routes/dashboard.routes');
 const { runMigrations } = require('./src/database/runMigrations');
 const { runSeeders } = require('./src/database/runSeeders');
 const teamRoutes = require('./src/routes/team.routes');
@@ -18,6 +20,8 @@ const ALLOWED_ORIGINS = rawOrigins
 	.filter(Boolean);
 
 const app = express();
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'dev-session-secret-change-me';
+const isProduction = process.env.NODE_ENV === 'production';
 
 function isFlagEnabled(value) {
 	return String(value).trim().toLowerCase() === 'true';
@@ -56,16 +60,32 @@ app.use(
 			console.warn(`[cors] Blocked origin: ${requestOrigin}`);
 			return callback(new Error('Not allowed by CORS'));
 		},
+		credentials: true,
 	})
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(
+	session({
+		name: 'poke.sid',
+		secret: SESSION_SECRET,
+		resave: false,
+		saveUninitialized: false,
+		cookie: {
+			httpOnly: true,
+			sameSite: 'lax',
+			secure: isProduction,
+			maxAge: 1000 * 60 * 60 * 8,
+		},
+	})
+);
 
 app.get('/health', (req, res) => {
 	res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/pokemon', pokemonRoutes);
 app.use('/api/trainers', trainerRoutes);
 app.use('/api/types', typeRoutes);

@@ -1,4 +1,4 @@
-const pool = require('../database/pool');
+const { Type } = require('../database/ormModels');
 
 function mapRow(row) {
 	if (!row) return null;
@@ -13,42 +13,45 @@ function mapRow(row) {
 }
 
 async function findAll() {
-	const [rows] = await pool.query('SELECT id, name, color, description, created_at, updated_at FROM types ORDER BY name ASC');
-	return rows.map(mapRow);
+	const rows = await Type.findAll({ order: [['name', 'ASC']] });
+	return rows.map((entry) => mapRow(entry.get({ plain: true })));
 }
 
 async function findById(id) {
-	const [rows] = await pool.query(
-		'SELECT id, name, color, description, created_at, updated_at FROM types WHERE id = ? LIMIT 1',
-		[id]
-	);
-	return mapRow(rows[0]);
+	const row = await Type.findByPk(id);
+	return mapRow(row?.get({ plain: true }));
 }
 
 async function findByName(name) {
-	const [rows] = await pool.query('SELECT id, name, color, description, created_at, updated_at FROM types WHERE name = ? LIMIT 1', [name]);
-	return mapRow(rows[0]);
+	const row = await Type.findOne({ where: { name } });
+	return mapRow(row?.get({ plain: true }));
 }
 
 async function create({ name, color, description }) {
-	const [result] = await pool.execute(
-		'INSERT INTO types (name, color, description, created_at, updated_at) VALUES (?, ?, ?, NOW(), NOW())',
-		[name, color ?? null, description ?? null]
-	);
-	return findById(result.insertId);
+	const row = await Type.create({
+		name,
+		color: color ?? null,
+		description: description ?? null,
+	});
+	return mapRow(row.get({ plain: true }));
 }
 
 async function update(id, { name, color, description }) {
-	await pool.execute(
-		'UPDATE types SET name = ?, color = ?, description = ?, updated_at = NOW() WHERE id = ?',
-		[name, color ?? null, description ?? null, id]
-	);
-	return findById(id);
+	const row = await Type.findByPk(id);
+	if (!row) return null;
+
+	await row.update({
+		name,
+		color: color ?? null,
+		description: description ?? null,
+	});
+
+	return mapRow(row.get({ plain: true }));
 }
 
 async function remove(id) {
-	const [result] = await pool.execute('DELETE FROM types WHERE id = ?', [id]);
-	return result.affectedRows > 0;
+	const deletedCount = await Type.destroy({ where: { id } });
+	return deletedCount > 0;
 }
 
 module.exports = {
