@@ -349,8 +349,6 @@ cd backend
 npm test
 ```
 
-If you want, I can also generate a Postman collection with the protected endpoints (login + CRUDs) and add it to the repository.
-
 
 ## Diagramas (renderizados en README)
 
