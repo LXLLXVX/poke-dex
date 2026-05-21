@@ -6,8 +6,9 @@ left to right direction
 skinparam shadowing false
 skinparam packageStyle rectangle
 
-actor "Usuario Web" as User
-actor "Operador Backend" as Admin
+actor "Usuario Autenticado\n(trainer)" as AuthUser
+actor "Usuario Anónimo\n(guest)" as Guest
+actor "Administrador\n(admin)" as Admin
 actor "PokeAPI" as PokeApi
 
 rectangle "Poke Team Lab" {
@@ -27,13 +28,26 @@ rectangle "Poke Team Lab" {
     usecase "Importar Pokémon Gen I" as UC_IMPORT
 }
 
-User --> UC_LIST_POKEMON
-User --> UC_FILTER_POKEMON
-User --> UC_DETAIL_POKEMON
-User --> UC_TYPES
-User --> UC_TRAINERS
-User --> UC_TEAM
-User --> UC_HEALTH
+Guest --> UC_LIST_POKEMON
+Guest --> UC_FILTER_POKEMON
+Guest --> UC_DETAIL_POKEMON
+Guest --> UC_HEALTH
+
+AuthUser --> UC_LIST_POKEMON
+AuthUser --> UC_FILTER_POKEMON
+AuthUser --> UC_DETAIL_POKEMON
+AuthUser --> UC_TYPES
+AuthUser --> UC_TRAINERS
+AuthUser --> UC_TEAM
+AuthUser --> UC_HEALTH
+
+Admin --> UC_LIST_POKEMON
+Admin --> UC_FILTER_POKEMON
+Admin --> UC_DETAIL_POKEMON
+Admin --> UC_TYPES
+Admin --> UC_TRAINERS
+Admin --> UC_TEAM
+Admin --> UC_HEALTH
 
 Admin --> UC_BOOTSTRAP
 Admin --> UC_MIGRATIONS
@@ -44,5 +58,12 @@ UC_BOOTSTRAP .> UC_SEEDERS : <<include>>
 UC_SEEDERS .> UC_IMPORT : <<include>>
 
 PokeApi --> UC_IMPORT
+
+'note top'
+Roles:
+- `Administrador`: tareas administrativas (migraciones, seeders, bootstrap).
+- `Usuario Autenticado (trainer)`: acceso a endpoints protegidos (crear/editar equipo, acciones restringidas en trainers).
+- `Usuario Anónimo (guest)`: acceso de solo lectura (listar y ver Pokémon / tipos).
+end note
 @enduml
 ```

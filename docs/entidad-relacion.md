@@ -55,6 +55,16 @@ entity "team_members" as team_members {
     updated_at : TIMESTAMP
 }
 
+entity "users" as users {
+    * id : INT UNSIGNED <<PK>>
+    --
+    * username : VARCHAR(80) <<UNIQUE>>
+    * password_hash : VARCHAR(255)
+    * role : ENUM('admin','trainer')
+    created_at : TIMESTAMP
+    updated_at : TIMESTAMP
+}
+
 trainers ||--o{ pokemon : "fk_pokemon_trainer\nON DELETE SET NULL"
 pokemon ||--o{ team_members : "fk_team_members_pokemon\nON DELETE CASCADE"
 
