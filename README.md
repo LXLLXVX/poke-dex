@@ -350,9 +350,9 @@ npm test
 ```
 
 
-## Diagramas (renderizados en README)
+## Diagrams (renderizados en README)
 
-### Casos de uso
+### Uses Case
 
 ```mermaid
 flowchart LR
@@ -371,7 +371,7 @@ flowchart LR
       A --> B3[Ejecutar seeders]
 ```
 
-### Diagrama de clases (backend)
+### Classes Diagram (backend)
 
 ```mermaid
 classDiagram
@@ -416,7 +416,7 @@ classDiagram
       UserModel --> SequelizeORM
 ```
 
-### Entidad-relación
+### Relation-Entity
 
 ```mermaid
 erDiagram
