@@ -279,6 +279,79 @@ docker-compose.yml    Local MySQL with Docker
 - docs/entidad-relacion.md
 - docs/diagrams.md
 
+## New features and how to verify them (notifications, auth, dev)
+
+These steps cover the most recent enhancements: browser push notifications (Service Worker), a global activity listener via Socket.IO, JWT Bearer authentication, and development conveniences for Vite.
+
+1. Install dependencies (if not already done):
+
+```bash
+npm install --prefix backend
+npm install --prefix frontend
+```
+
+2. Start MySQL with Docker:
+
+```bash
+docker compose up -d
+```
+
+3. Backend environment variables:
+
+- Copy `backend/.env.example` to `backend/.env` and adjust if needed (DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, CLIENT_ORIGINS). For local development with Vite you don't need to list specific ports; the server accepts `http://localhost:<port>` origins.
+
+4. Run migrations and seeders (optional if `DB_AUTO_MIGRATE=true`):
+
+```bash
+cd backend
+npm run migrate
+npm run seed
+```
+
+5. Start backend API:
+
+```bash
+cd backend
+npm start
+# API available at http://localhost:4000
+```
+
+6. Start frontend (Vite):
+
+```bash
+cd frontend
+npm run dev
+# Vite may pick an alternate port if 5173 is in use (e.g. 5175)
+```
+
+7. Enable browser notifications:
+
+- Open the app in your browser (e.g. `http://localhost:5175` or `5173`).
+- Go to the `Live Activity` panel on the `Dashboard` and click the `Enable notifications` button (the app will request Notification permission).
+- The Service Worker registers automatically from `/notification-sw.js`.
+
+8. Test push notifications:
+
+- From the UI create a new `Type` in `Type Insights` with a valid `name` (letters and hyphens only) and a valid `color` (hex).
+- When created, the backend emits an `activity` event; the client will call `registration.showNotification(...)` (if the SW is registered) or fall back to an in-page `Notification`.
+
+9. Technical notes:
+
+- Service Worker: `frontend/public/notification-sw.js` (handles `notificationclick` to focus/open `/dashboard`).
+- Global listener: `frontend/src/services/globalNotifications.js` (started from `main.jsx`) — listens for `activity` via Socket.IO and shows notifications even when `LiveActivityFeed` is not mounted.
+- Live component: `frontend/src/components/realtime/LiveActivityFeed.jsx` — shows recent events and has buttons to enable/test notifications.
+- Auth: `backend/src/middlewares/authMiddleware.js` (Bearer JWT). Protected routes include `trainer.routes.js` and `dashboard.routes.js` (you can apply `authenticate` to other routes if desired).
+
+10. Run backend tests:
+
+```bash
+cd backend
+npm test
+```
+
+If you want, I can also generate a Postman collection with the protected endpoints (login + CRUDs) and add it to the repository.
+
+
 ## Diagramas (renderizados en README)
 
 ### Casos de uso

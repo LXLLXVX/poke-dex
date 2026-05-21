@@ -1,4 +1,10 @@
 const pool = require('./pool');
+const sequelize = require('./sequelize');
+
+const dbAdapter = {
+  query: async (sql, params) => sequelize.query(sql, { replacements: params }),
+  execute: async (sql, params) => sequelize.query(sql, { replacements: params }),
+};
 
 const seeders = [
   { name: '001_types_seeder', module: require('./seeders/001_types_seeder') },
@@ -15,7 +21,7 @@ async function runSeeders() {
     }
 
     console.info(`[seed] running ${seeder.name}`);
-    await seeder.module.seed(pool);
+    await seeder.module.seed(dbAdapter);
   }
 }
 
@@ -25,11 +31,11 @@ if (require.main === module) {
   runSeeders()
     .then(() => {
       console.info('[seed] completed');
-      return pool.end();
+      return sequelize.close();
     })
     .catch(async (error) => {
       console.error('[seed] failed:', error);
-      await pool.end();
+      await sequelize.close();
       process.exit(1);
     });
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { buildAuthHeaders, clearAuthToken, getAuthToken, setAuthToken } from '../utils/authToken';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api';
 const FALLBACK_PORTRAIT = '/trainer-silhouette.svg';
@@ -141,7 +142,7 @@ function TrainerProfiles() {
 
 		const response = await fetch(`${API_BASE_URL}/trainers`, {
 			signal,
-			credentials: 'include',
+			headers: buildAuthHeaders(),
 		});
 		if (!response.ok) {
 			const payload = await response.json().catch(() => ({}));
@@ -157,12 +158,19 @@ function TrainerProfiles() {
 
 	useEffect(() => {
 		const controller = new AbortController();
+		const token = getAuthToken();
+
+		if (!token) {
+			setAuthStatus('guest');
+			setAuthUser(null);
+			return () => controller.abort();
+		}
 
 		async function checkSession() {
 			try {
 				const response = await fetch(`${API_BASE_URL}/auth/me`, {
 					signal: controller.signal,
-					credentials: 'include',
+					headers: buildAuthHeaders(),
 				});
 				if (response.status === 401) {
 					setAuthUser(null);
@@ -194,7 +202,6 @@ function TrainerProfiles() {
 		try {
 			const response = await fetch(`${API_BASE_URL}/auth/login`, {
 				method: 'POST',
-				credentials: 'include',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ username, password }),
 			});
@@ -205,6 +212,7 @@ function TrainerProfiles() {
 			}
 
 			const payload = await response.json();
+			setAuthToken(payload.data?.token ?? null);
 			setAuthUser(payload.data?.user ?? null);
 			setAuthStatus('authenticated');
 			await loadTrainers();
@@ -217,8 +225,9 @@ function TrainerProfiles() {
 	const handleLogout = async () => {
 		await fetch(`${API_BASE_URL}/auth/logout`, {
 			method: 'POST',
-			credentials: 'include',
+			headers: buildAuthHeaders(),
 		});
+		clearAuthToken();
 		setAuthUser(null);
 		setAuthStatus('guest');
 		setTrainers([]);
@@ -242,7 +251,7 @@ function TrainerProfiles() {
 					<p className="eyebrow">Kanto leadership board</p>
 					<h2>Meet the Generation I trainers.</h2>
 					<p className="subtitle">
-						CRUD de entrenadores protegido con sesiones y cookies. Inicia sesion para consultar y gestionar datos.
+						CRUD de entrenadores protegido con Bearer token. Inicia sesion para consultar y gestionar datos.
 					</p>
 				</div>
 				<div className="trainer-hero__stats">
@@ -267,7 +276,7 @@ function TrainerProfiles() {
 
 			{authStatus === 'authenticated' && (
 				<div className="trainer-session-bar">
-					<p className="muted">Sesion activa como {authUser?.username} ({authUser?.role})</p>
+					<p className="muted">Token activo como {authUser?.username} ({authUser?.role})</p>
 					<button type="button" className="ghost ghost--muted" onClick={handleLogout}>
 						Cerrar sesion
 					</button>

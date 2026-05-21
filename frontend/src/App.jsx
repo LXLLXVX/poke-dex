@@ -5,6 +5,7 @@ import TrainerProfiles from './pages/TrainerProfiles';
 import TeamBuilder from './pages/TeamBuilder';
 import TypeInsights from './pages/TypeInsights';
 import Dashboard from './pages/Dashboard';
+import { buildAuthHeaders, getAuthToken } from './utils/authToken';
 import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api';
@@ -21,12 +22,18 @@ function App() {
 
   useEffect(() => {
     const controller = new AbortController();
+    const token = getAuthToken();
+
+    if (!token) {
+      setAuthUser(null);
+      return () => controller.abort();
+    }
 
     async function loadSession() {
       try {
         const response = await fetch(`${API_BASE_URL}/auth/me`, {
           signal: controller.signal,
-          credentials: 'include',
+          headers: buildAuthHeaders(),
         });
 
         if (!response.ok) {

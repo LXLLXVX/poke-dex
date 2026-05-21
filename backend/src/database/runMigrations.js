@@ -1,4 +1,16 @@
 const pool = require('./pool');
+const sequelize = require('./sequelize');
+
+// adapter so existing migration modules that expect a `pool`-like
+// object with `query`/`execute` keep working when we pass Sequelize
+const dbAdapter = {
+  query: async (sql, params) => {
+    return sequelize.query(sql, { replacements: params });
+  },
+  execute: async (sql, params) => {
+    return sequelize.query(sql, { replacements: params });
+  },
+};
 
 const migrations = [
   { name: '001_create_types_table', module: require('./migrations/001_create_types_table') },
@@ -11,7 +23,7 @@ const migrations = [
 ];
 
 async function ensureMigrationsTable() {
-  await pool.query(`
+  await dbAdapter.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       name VARCHAR(191) NOT NULL PRIMARY KEY,
       ran_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -20,16 +32,16 @@ async function ensureMigrationsTable() {
 }
 
 async function getAppliedMigrations() {
-  const [rows] = await pool.query('SELECT name FROM schema_migrations');
+  const [rows] = await dbAdapter.query('SELECT name FROM schema_migrations');
   return new Set(rows.map((row) => row.name));
 }
 
 async function markApplied(name) {
-  await pool.query('INSERT INTO schema_migrations (name) VALUES (?) ON DUPLICATE KEY UPDATE ran_at = CURRENT_TIMESTAMP', [name]);
+  await dbAdapter.query('INSERT INTO schema_migrations (name) VALUES (?) ON DUPLICATE KEY UPDATE ran_at = CURRENT_TIMESTAMP', [name]);
 }
 
 async function unmarkApplied(name) {
-  await pool.query('DELETE FROM schema_migrations WHERE name = ?', [name]);
+  await dbAdapter.query('DELETE FROM schema_migrations WHERE name = ?', [name]);
 }
 
 async function runMigrations(direction = 'up') {
@@ -60,7 +72,8 @@ async function runMigrations(direction = 'up') {
     }
 
     console.info(`[migration] ${direction.toUpperCase()} ${migration.name}`);
-    await handler(pool);
+    // pass Sequelize-backed adapter so migration modules keep working
+    await handler(dbAdapter);
 
     if (direction === 'up') {
       await markApplied(migration.name);
@@ -76,13 +89,13 @@ if (require.main === module) {
   const direction = process.argv[2] || 'up';
 
   runMigrations(direction)
-    .then(() => {
+    .then(async () => {
       console.info(`[migration] ${direction} completed`);
-      return pool.end();
+      await sequelize.close();
     })
     .catch(async (error) => {
       console.error('[migration] failed:', error);
-      await pool.end();
+      await sequelize.close();
       process.exit(1);
     });
 }

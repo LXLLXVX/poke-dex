@@ -1,4 +1,5 @@
 const pokemonService = require('../services/pokemonService');
+const { publishActivity } = require('../services/realtimeService');
 
 async function listPokemon(req, res, next) {
 	try {
@@ -32,6 +33,11 @@ async function getPokemon(req, res, next) {
 async function createPokemon(req, res, next) {
 	try {
 		const pokemon = await pokemonService.createPokemon(req.body);
+		publishActivity({
+			type: 'pokemon',
+			action: 'created',
+			message: `Nuevo Pokémon registrado: ${pokemon.name}`,
+		});
 		res.status(201).json({ data: pokemon });
 	} catch (error) {
 		next(error);
@@ -41,6 +47,11 @@ async function createPokemon(req, res, next) {
 async function updatePokemon(req, res, next) {
 	try {
 		const pokemon = await pokemonService.updatePokemon(req.params.nationalDex, req.body);
+		publishActivity({
+			type: 'pokemon',
+			action: 'updated',
+			message: `Pokémon actualizado: ${pokemon.name}`,
+		});
 		res.json({ data: pokemon });
 	} catch (error) {
 		next(error);
@@ -50,6 +61,11 @@ async function updatePokemon(req, res, next) {
 async function deletePokemon(req, res, next) {
 	try {
 		await pokemonService.deletePokemon(req.params.nationalDex);
+		publishActivity({
+			type: 'pokemon',
+			action: 'deleted',
+			message: `Pokémon eliminado: #${req.params.nationalDex}`,
+		});
 		res.status(204).send();
 	} catch (error) {
 		next(error);
