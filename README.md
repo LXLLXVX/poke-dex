@@ -327,7 +327,7 @@ npm run dev
 7. Enable browser notifications:
 
 - Open the app in your browser (e.g. `http://localhost:5175` or `5173`).
-- Go to the `Live Activity` panel on the `Dashboard` and click `Activar notificaciones` (the app will request Notification permission).
+- Go to the `Live Activity` panel on the `Dashboard` and click the `Enable notifications` button (the app will request Notification permission).
 - The Service Worker registers automatically from `/notification-sw.js`.
 
 8. Test push notifications:
