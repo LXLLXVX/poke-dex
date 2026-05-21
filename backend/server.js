@@ -1,7 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const session = require('express-session');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 
 const pokemonRoutes = require('./src/routes/pokemon.routes');
 const trainerRoutes = require('./src/routes/trainer.routes');
@@ -11,6 +12,7 @@ const dashboardRoutes = require('./src/routes/dashboard.routes');
 const { runMigrations } = require('./src/database/runMigrations');
 const { runSeeders } = require('./src/database/runSeeders');
 const teamRoutes = require('./src/routes/team.routes');
+const { setRealtimeServer } = require('./src/services/realtimeService');
 
 const PORT = process.env.PORT || 4000;
 const rawOrigins = process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://localhost:5174';
@@ -20,8 +22,6 @@ const ALLOWED_ORIGINS = rawOrigins
 	.filter(Boolean);
 
 const app = express();
-const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'dev-session-secret-change-me';
-const isProduction = process.env.NODE_ENV === 'production';
 
 function isFlagEnabled(value) {
 	return String(value).trim().toLowerCase() === 'true';
@@ -49,36 +49,26 @@ async function autoSetupDatabase() {
 app.use(
 	cors({
 		origin(requestOrigin, callback) {
-			if (!requestOrigin) {
-				return callback(null, true);
-			}
+				if (!requestOrigin) return callback(null, true);
 
-			if (ALLOWED_ORIGINS.includes(requestOrigin)) {
-				return callback(null, true);
-			}
+				// Allow explicit configured origins
+				if (ALLOWED_ORIGINS.includes(requestOrigin)) return callback(null, true);
 
-			console.warn(`[cors] Blocked origin: ${requestOrigin}`);
-			return callback(new Error('Not allowed by CORS'));
+				// Allow localhost dev servers on any port (useful for Vite)
+				try {
+					if (requestOrigin.startsWith('http://localhost') || requestOrigin.startsWith('http://127.0.0.1')) {
+						return callback(null, true);
+					}
+				} catch (e) {}
+
+				console.warn(`[cors] Blocked origin: ${requestOrigin}`);
+				return callback(new Error('Not allowed by CORS'));
 		},
 		credentials: true,
 	})
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-	session({
-		name: 'poke.sid',
-		secret: SESSION_SECRET,
-		resave: false,
-		saveUninitialized: false,
-		cookie: {
-			httpOnly: true,
-			sameSite: 'lax',
-			secure: isProduction,
-			maxAge: 1000 * 60 * 60 * 8,
-		},
-	})
-);
 
 app.get('/health', (req, res) => {
 	res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -105,7 +95,16 @@ app.use((err, req, res, next) => {
 async function start() {
 	await autoSetupDatabase();
 
-	return app.listen(PORT, () => {
+	const server = createServer(app);
+	const io = new Server(server, {
+		cors: {
+			origin: ALLOWED_ORIGINS,
+			credentials: true,
+		},
+	});
+	setRealtimeServer(io);
+
+	return server.listen(PORT, () => {
 		console.info(`API listening on http://localhost:${PORT}`);
 	});
 }

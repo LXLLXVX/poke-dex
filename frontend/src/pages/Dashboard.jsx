@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import LiveActivityFeed from '../components/realtime/LiveActivityFeed';
+import { buildAuthHeaders } from '../utils/authToken';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api';
 
@@ -28,7 +30,7 @@ function Dashboard() {
 			try {
 				const response = await fetch(`${API_BASE_URL}/dashboard/team-distribution?${params.toString()}`, {
 					signal: controller.signal,
-					credentials: 'include',
+					headers: buildAuthHeaders(),
 				});
 				if (!response.ok) {
 					const payload = await response.json().catch(() => ({}));
@@ -135,6 +137,8 @@ function Dashboard() {
 					</select>
 				</label>
 			</div>
+
+			<LiveActivityFeed />
 
 			{status === 'loading' && <p className="muted">Cargando dashboard...</p>}
 			{status === 'error' && <p className="error">{error}</p>}

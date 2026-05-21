@@ -1,5 +1,11 @@
 const request = require('supertest');
 
+// stub auth middleware so protected routes don't require Authorization header
+jest.mock('../src/middlewares/authMiddleware', () => ({
+	authenticate: (req, res, next) => next(),
+	authorizeRoles: () => (req, res, next) => next(),
+}));
+
 jest.mock('../src/services/typeService');
 
 const app = require('../server');

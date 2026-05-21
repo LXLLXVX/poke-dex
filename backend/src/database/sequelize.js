@@ -5,8 +5,8 @@ dotenv.config();
 
 const sequelize = new Sequelize(
 	process.env.DB_NAME || 'poke_team',
-	process.env.DB_USER || 'root',
-	process.env.DB_PASSWORD || '',
+	process.env.DB_USER || 'poke_user',
+	process.env.DB_PASSWORD || 'poke_pass',
 	{
 		host: process.env.DB_HOST || '127.0.0.1',
 		port: Number(process.env.DB_PORT || 3306),
