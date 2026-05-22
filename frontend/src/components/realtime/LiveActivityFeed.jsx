@@ -70,7 +70,7 @@ function LiveActivityFeed() {
 		}
 
 		const options = {
-			body: 'Esta es una notificacion de prueba manual.',
+			body: 'This is a manual test notification.',
 			tag: 'manual-test',
 		};
 
@@ -133,24 +133,23 @@ function LiveActivityFeed() {
 		<aside className="live-activity-panel">
 			<header className="live-activity-panel__header">
 				<div>
-					<p className="eyebrow">WebSockets</p>
-					<h3>Actividad en tiempo real</h3>
+						<h3>Live activity</h3>
 				</div>
 				<div className="live-activity-panel__actions">
 					<span className={`live-activity-badge live-activity-badge--${connectionState}`}>{connectionState}</span>
 					<span className={`live-activity-badge live-activity-badge--${notificationPermission}`}>
-						{notificationPermission === 'default' ? 'sin permiso' : notificationPermission}
+							{notificationPermission === 'default' ? 'no permission' : notificationPermission}
 					</span>
 					<button type="button" className="ghost ghost--muted" onClick={requestNotifications}>
-						Activar notificaciones
+							Enable notifications
 					</button>
 					<button type="button" className="ghost" onClick={sendTestNotification}>
-						Probar notificacion
+							Test notification
 					</button>
 				</div>
 			</header>
 			{events.length === 0 ? (
-				<p className="muted">Espera cambios en trainers, pokemon o types para ver notificaciones en vivo.</p>
+					<p className="muted">Wait for changes in trainers, Pokemon, or types to see live notifications.</p>
 			) : (
 				<ul className="live-activity-list">
 					{events.map((event, index) => (

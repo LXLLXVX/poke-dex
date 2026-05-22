@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 
@@ -22,6 +23,9 @@ const ALLOWED_ORIGINS = rawOrigins
 	.filter(Boolean);
 
 const app = express();
+
+const SESSION_SECRET = process.env.SESSION_SECRET || process.env.JWT_SECRET || 'dev-session-secret-change-me';
+const SESSION_MAX_AGE = Number(process.env.SESSION_MAX_AGE_MS || 1000 * 60 * 60 * 2);
 
 function isFlagEnabled(value) {
 	return String(value).trim().toLowerCase() === 'true';
@@ -65,6 +69,21 @@ app.use(
 				return callback(new Error('Not allowed by CORS'));
 		},
 		credentials: true,
+	})
+);
+
+app.use(
+	session({
+		name: 'poke.team.sid',
+		secret: SESSION_SECRET,
+		resave: false,
+		saveUninitialized: false,
+		cookie: {
+			httpOnly: true,
+			sameSite: 'lax',
+			secure: process.env.NODE_ENV === 'production',
+			maxAge: SESSION_MAX_AGE,
+		},
 	})
 );
 app.use(express.json());

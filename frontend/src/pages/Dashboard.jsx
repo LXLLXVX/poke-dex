@@ -31,6 +31,7 @@ function Dashboard() {
 				const response = await fetch(`${API_BASE_URL}/dashboard/team-distribution?${params.toString()}`, {
 					signal: controller.signal,
 					headers: buildAuthHeaders(),
+					credentials: 'include',
 				});
 				if (!response.ok) {
 					const payload = await response.json().catch(() => ({}));
@@ -45,7 +46,7 @@ function Dashboard() {
 				setStatus('ready');
 			} catch (requestError) {
 				if (requestError.name === 'AbortError') return;
-				setError(requestError.message ?? 'Error inesperado en dashboard.');
+				setError(requestError.message ?? 'Unexpected dashboard error.');
 				setStatus('error');
 			}
 		}
@@ -71,22 +72,22 @@ function Dashboard() {
 			<header className="dashboard-hero">
 				<div>
 					<p className="eyebrow">Analytics dashboard</p>
-					<h2>Distribucion de equipo por entrenador</h2>
+					<h2>Team distribution by trainer</h2>
 					<p className="subtitle">
-						Consulta de 3 tablas: trainers + pokemon + team_members. Usa filtros y revisa la grafica por entrenador.
+						Querying three tables: trainers + pokemon + team_members. Use the filters and review each trainer chart.
 					</p>
 				</div>
 				<div className="dashboard-hero__stats">
 					<div>
-						<span>Entrenadores</span>
+						<span>Trainers</span>
 						<strong>{totals.trainers}</strong>
 					</div>
 					<div>
-						<span>Slots en equipos</span>
+						<span>Team slots</span>
 						<strong>{totals.teamSlots}</strong>
 					</div>
 					<div>
-						<span>Pokemon unicos</span>
+						<span>Unique Pokemon</span>
 						<strong>{totals.uniquePokemon}</strong>
 					</div>
 				</div>
@@ -94,13 +95,13 @@ function Dashboard() {
 
 			<div className="dashboard-filters">
 				<label htmlFor="dash-trainer">
-					Entrenador
+					Trainer
 					<select
 						id="dash-trainer"
 						value={filters.trainerId}
 						onChange={(event) => setFilters((prev) => ({ ...prev, trainerId: event.target.value }))}
 					>
-						<option value="">Todos</option>
+						<option value="">All</option>
 						{trainerOptions.map((trainer) => (
 							<option key={trainer.id} value={trainer.id}>
 								{trainer.name}
@@ -110,7 +111,7 @@ function Dashboard() {
 				</label>
 
 				<label htmlFor="dash-badges">
-					Min badges
+					Minimum badges
 					<input
 						id="dash-badges"
 						type="number"
@@ -122,13 +123,13 @@ function Dashboard() {
 				</label>
 
 				<label htmlFor="dash-type">
-					Tipo
+					Type
 					<select
 						id="dash-type"
 						value={filters.type}
 						onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value }))}
 					>
-						<option value="">Todos</option>
+						<option value="">All</option>
 						{typeOptions.map((type) => (
 							<option key={type.id} value={type.name}>
 								{type.name}
@@ -140,12 +141,12 @@ function Dashboard() {
 
 			<LiveActivityFeed />
 
-			{status === 'loading' && <p className="muted">Cargando dashboard...</p>}
+			{status === 'loading' && <p className="muted">Loading dashboard...</p>}
 			{status === 'error' && <p className="error">{error}</p>}
 
 			{status === 'ready' && (
 				<div className="dashboard-chart">
-					{rows.length === 0 && <p className="muted">No hay datos para los filtros seleccionados.</p>}
+					{rows.length === 0 && <p className="muted">No data matches the selected filters.</p>}
 					{rows.map((row) => {
 						const size = Number(row.teamSize) || 0;
 						const percentage = Math.max(4, Math.round((size / maxTeamSize) * 100));
@@ -155,7 +156,7 @@ function Dashboard() {
 									<h3>{row.trainerName}</h3>
 									<span>{row.badgeCount} badges</span>
 								</header>
-								<div className="chart-bar-track" role="img" aria-label={`Team size de ${row.trainerName}: ${size}`}>
+								<div className="chart-bar-track" role="img" aria-label={`Team size for ${row.trainerName}: ${size}`}>
 									<div className="chart-bar-fill" style={{ width: `${percentage}%` }} />
 								</div>
 								<footer>

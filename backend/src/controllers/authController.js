@@ -5,7 +5,10 @@ async function login(req, res, next) {
 		const { username, password } = req.body;
 		const { user, token } = await authService.loginWithPassword(username, password);
 
-		// Return bearer token (stateless auth). Do not create a server session.
+		if (req.session) {
+			req.session.user = user;
+		}
+
 		res.json({
 			data: {
 				user,
@@ -19,9 +22,16 @@ async function login(req, res, next) {
 
 async function logout(req, res, next) {
 	try {
-		// Stateless logout: instruct client to drop the token. Server cannot
-		// invalidate JWTs without a revocation store. Return 204 to indicate
-		// the client should remove the token locally.
+		if (req.session) {
+			return req.session.destroy((error) => {
+				if (error) {
+					return next(error);
+				}
+
+				return res.clearCookie('poke.team.sid').status(204).send();
+			});
+		}
+
 		return res.status(204).send();
 	} catch (error) {
 		next(error);
@@ -31,7 +41,7 @@ async function logout(req, res, next) {
 function me(req, res, next) {
 	try {
 		if (!req.auth?.user) {
-			return res.status(401).json({ message: 'No valid token' });
+			return res.status(401).json({ message: 'No valid session or token' });
 		}
 
 		return res.json({ data: { user: req.auth.user, via: req.auth.via } });

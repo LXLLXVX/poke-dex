@@ -4,7 +4,7 @@ const { httpError } = require('../utils/httpError');
 function parseAuthorizationHeader(req) {
 	const header = req.headers.authorization;
 	if (!header) {
-		throw httpError(401, 'Authorization header is required');
+		return null;
 	}
 
 	const [scheme, credentials] = header.split(' ');
@@ -17,22 +17,36 @@ function parseAuthorizationHeader(req) {
 
 async function authenticate(req, res, next) {
 	try {
-		const { scheme, credentials } = parseAuthorizationHeader(req);
+		const headerAuth = parseAuthorizationHeader(req);
 
-		if (scheme !== 'bearer') {
-			throw httpError(401, 'Only Bearer authentication is supported');
+		if (headerAuth) {
+			const { scheme, credentials } = headerAuth;
+
+			if (scheme !== 'bearer') {
+				throw httpError(401, 'Only Bearer authentication is supported');
+			}
+
+			const payload = authService.verifyToken(credentials);
+			req.auth = {
+				user: {
+					id: payload.sub,
+					username: payload.username,
+					role: payload.role,
+				},
+				via: 'bearer',
+			};
+			return next();
 		}
 
-		const payload = authService.verifyToken(credentials);
-		req.auth = {
-			user: {
-				id: payload.sub,
-				username: payload.username,
-				role: payload.role,
-			},
-			via: 'bearer',
-		};
-		return next();
+		if (req.session?.user) {
+			req.auth = {
+				user: req.session.user,
+				via: 'session',
+			};
+			return next();
+		}
+
+		throw httpError(401, 'Authorization header or session is required');
 	} catch (error) {
 		next(error);
 	}

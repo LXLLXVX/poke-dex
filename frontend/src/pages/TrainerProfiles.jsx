@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { buildAuthHeaders, clearAuthToken, getAuthToken, setAuthToken } from '../utils/authToken';
+import { buildAuthHeaders, clearAuthToken, setAuthToken } from '../utils/authToken';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000/api';
 const FALLBACK_PORTRAIT = '/trainer-silhouette.svg';
@@ -143,6 +143,7 @@ function TrainerProfiles() {
 		const response = await fetch(`${API_BASE_URL}/trainers`, {
 			signal,
 			headers: buildAuthHeaders(),
+			credentials: 'include',
 		});
 		if (!response.ok) {
 			const payload = await response.json().catch(() => ({}));
@@ -158,19 +159,13 @@ function TrainerProfiles() {
 
 	useEffect(() => {
 		const controller = new AbortController();
-		const token = getAuthToken();
-
-		if (!token) {
-			setAuthStatus('guest');
-			setAuthUser(null);
-			return () => controller.abort();
-		}
 
 		async function checkSession() {
 			try {
 				const response = await fetch(`${API_BASE_URL}/auth/me`, {
 					signal: controller.signal,
 					headers: buildAuthHeaders(),
+					credentials: 'include',
 				});
 				if (response.status === 401) {
 					setAuthUser(null);
@@ -203,6 +198,7 @@ function TrainerProfiles() {
 			const response = await fetch(`${API_BASE_URL}/auth/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
+				credentials: 'include',
 				body: JSON.stringify({ username, password }),
 			});
 
@@ -226,6 +222,7 @@ function TrainerProfiles() {
 		await fetch(`${API_BASE_URL}/auth/logout`, {
 			method: 'POST',
 			headers: buildAuthHeaders(),
+			credentials: 'include',
 		});
 		clearAuthToken();
 		setAuthUser(null);
